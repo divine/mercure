@@ -14,11 +14,6 @@ if ! type "git" > /dev/null; then
     exit 1
 fi
 
-if ! type "helm-docs" > /dev/null; then
-    echo "The \"helm-docs\" command (https://github.com/norwoodj/helm-docs) must be installed."
-    exit 1
-fi
-
 if [ $# -ne 1 ]; then
     echo "Usage: ./release.sh version" >&2
     exit 1
@@ -34,11 +29,8 @@ git checkout main
 git pull
 
 cd caddy/
-go get "github.com/dunglas/mercure@v$1"
+go get "github.com/divine/mercure@v$1"
 cd -
-
-sed -i '' -e "s/^version: .*$/version: $1/" -e "s/^appVersion: .*$/appVersion: \"v$1\"/" charts/mercure/Chart.yaml
-helm-docs
 
 git commit -S -a -m "chore: prepare release $1"
 
