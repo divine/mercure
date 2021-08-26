@@ -134,7 +134,6 @@ func NewHubFromViper(v *viper.Viper) (*Hub, error) { //nolint:funlen,gocognit
 
 	options := []Option{}
 	var (
-		logger Logger
 		err    error
 		k      string
 	)
@@ -156,10 +155,6 @@ func NewHubFromViper(v *viper.Viper) (*Hub, error) { //nolint:funlen,gocognit
 		}
 
 		options = append(options, WithTransport(t))
-	}
-
-	if v.GetBool("metrics_enabled") {
-		options = append(options, WithMetrics(NewPrometheusMetrics(nil)))
 	}
 
 	options = append(options, WithTopicSelectorStore(tss))

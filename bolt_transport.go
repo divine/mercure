@@ -26,7 +26,6 @@ const defaultBoltBucketName = "updates"
 // BoltTransport implements the TransportInterface using the Bolt database.
 type BoltTransport struct {
 	sync.RWMutex
-	logger           Logger
 	db               *bolt.DB
 	bucketName       string
 	size             uint64
@@ -39,7 +38,7 @@ type BoltTransport struct {
 }
 
 // NewBoltTransport create a new boltTransport.
-func NewBoltTransport(u *url.URL, l Logger, tss *TopicSelectorStore) (Transport, error) {
+func NewBoltTransport(u *url.URL, tss *TopicSelectorStore) (Transport, error) {
 	var err error
 	q := u.Query()
 	bucketName := defaultBoltBucketName
@@ -78,7 +77,6 @@ func NewBoltTransport(u *url.URL, l Logger, tss *TopicSelectorStore) (Transport,
 	}
 
 	return &BoltTransport{
-		logger:           l,
 		db:               db,
 		bucketName:       bucketName,
 		size:             size,
@@ -233,7 +231,6 @@ func (t *BoltTransport) dispatchHistory(s *Subscriber, toSeq uint64) {
 			var update *Update
 			if err := json.Unmarshal(v, &update); err != nil {
 				s.HistoryDispatched(responseLastEventID)
-				t.logger.Error("Unable to unmarshal update coming from the Bolt DB", zap.Error(err))
 
 				return fmt.Errorf("unable to unmarshal update: %w", err)
 			}
