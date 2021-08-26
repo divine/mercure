@@ -4,8 +4,8 @@ import (
 	"fmt"
 	"log"
 
-	"github.com/dunglas/mercure"
-	"github.com/dunglas/mercure/common"
+	"github.com/divine/mercure"
+	"github.com/divine/mercure/common"
 	"github.com/spf13/cobra"
 	"github.com/spf13/viper"
 )

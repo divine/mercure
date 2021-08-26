@@ -39,7 +39,7 @@ builds:
 - id: legacy
   dir: cmd/mercure
   ldflags:
-    - -s -w -X github.com/dunglas/mercure/common.version={{ .Version }} -X github.com/dunglas/mercure/common.commit={{ .ShortCommit }} -X github.com/dunglas/mercure/common.buildDate={{ .Date }}
+    - -s -w -X github.com/divine/mercure/common.version={{ .Version }} -X github.com/divine/mercure/common.commit={{ .ShortCommit }} -X github.com/divine/mercure/common.buildDate={{ .Date }}
   goos:
     - linux
     - darwin
@@ -88,10 +88,10 @@ dockers:
 - ids:
   - caddy
   image_templates:
-  - 'dunglas/mercure:{{ .Tag }}'
-  - 'dunglas/mercure:v{{ .Major }}'
-  - 'dunglas/mercure:v{{ .Major }}.{{ .Minor }}'
-  - 'dunglas/mercure:latest'
+  - 'divine/mercure:{{ .Tag }}'
+  - 'divine/mercure:v{{ .Major }}'
+  - 'divine/mercure:v{{ .Major }}.{{ .Minor }}'
+  - 'divine/mercure:latest'
   extra_files:
   - Caddyfile
   - Caddyfile.dev
@@ -99,10 +99,10 @@ dockers:
   - legacy
   dockerfile: Dockerfile.legacy
   image_templates:
-  - 'dunglas/mercure:legacy-{{ .Tag }}'
-  - 'dunglas/mercure:legacy-v{{ .Major }}'
-  - 'dunglas/mercure:legacy-v{{ .Major }}.{{ .Minor }}'
-  - 'dunglas/mercure:legacy-latest'
+  - 'divine/mercure:legacy-{{ .Tag }}'
+  - 'divine/mercure:legacy-v{{ .Major }}'
+  - 'divine/mercure:legacy-v{{ .Major }}.{{ .Minor }}'
+  - 'divine/mercure:legacy-latest'
 signs:
   - artifacts: checksum
     args: ["--batch", "-u", "{{ .Env.GPG_FINGERPRINT }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
