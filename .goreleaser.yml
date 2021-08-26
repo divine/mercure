@@ -84,22 +84,3 @@ archives:
   format_overrides:
   - goos: windows
     format: zip
-dockers:
-- ids:
-  - caddy
-  image_templates:
-  - 'divine/mercure:{{ .Tag }}'
-  - 'divine/mercure:v{{ .Major }}'
-  - 'divine/mercure:v{{ .Major }}.{{ .Minor }}'
-  - 'divine/mercure:latest'
-  extra_files:
-  - Caddyfile
-  - Caddyfile.dev
-- ids:
-  - legacy
-  dockerfile: Dockerfile.legacy
-  image_templates:
-  - 'divine/mercure:legacy-{{ .Tag }}'
-  - 'divine/mercure:legacy-v{{ .Major }}'
-  - 'divine/mercure:legacy-v{{ .Major }}.{{ .Minor }}'
-  - 'divine/mercure:legacy-latest'
