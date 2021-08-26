@@ -1,7 +1,6 @@
 package mercure
 
 import (
-	"context"
 	"errors"
 	"fmt"
 	"io/fs"
@@ -12,7 +11,6 @@ import (
 	"github.com/gorilla/handlers"
 	"github.com/gorilla/mux"
 	"github.com/unrolled/secure"
-	"go.uber.org/zap"
 	"golang.org/x/crypto/acme/autocert"
 )
 
@@ -88,18 +86,6 @@ func (h *Hub) Serve() {
 		WriteTimeout: h.config.GetDuration("write_timeout"),
 	}
 
-	if _, ok := h.metrics.(*PrometheusMetrics); ok {
-		addr := h.config.GetString("metrics_addr")
-
-		h.metricsServer = &http.Server{
-			Addr:    addr,
-			Handler: h.metricsHandler(),
-		}
-
-		h.logger.Info("Mercure metrics started", zap.String("addr", addr))
-		go h.metricsServer.ListenAndServe()
-	}
-
 	acme := len(h.allowedHosts) > 0
 
 	certFile := h.config.GetString("cert_file")
@@ -109,7 +95,6 @@ func (h *Hub) Serve() {
 	var err error
 
 	if !acme && certFile == "" && keyFile == "" {
-		h.logger.Info("Mercure started", zap.String("protocol", "http"), zap.String("addr", addr))
 		err = h.server.ListenAndServe()
 	} else {
 		// TLS
@@ -129,12 +114,10 @@ func (h *Hub) Serve() {
 			go http.ListenAndServe(h.config.GetString("acme_http01_addr"), certManager.HTTPHandler(nil))
 		}
 
-		h.logger.Info("Mercure started", zap.String("protocol", "https"), zap.String("addr", addr))
 		err = h.server.ListenAndServeTLS(certFile, keyFile)
 	}
 
 	if !errors.Is(err, http.ErrServerClosed) {
-		h.logger.Error("Unexpected error", zap.Error(err))
 	}
 
 	<-done
@@ -156,14 +139,6 @@ func (h *Hub) listenShutdown() <-chan struct{} {
 		sigint := make(chan os.Signal, 1)
 		signal.Notify(sigint, os.Interrupt)
 		<-sigint
-
-		if err := h.server.Shutdown(context.Background()); err != nil {
-			h.logger.Error("Unexpected error during server shutdown", zap.Error(err))
-		}
-		if err := h.metricsServer.Shutdown(context.Background()); err != nil {
-			h.logger.Error("Unexpected error during metrics server shutdown", zap.Error(err))
-		}
-		h.logger.Info("My Baby Shot Me Down")
 
 		select {
 		case <-idleConnsClosed:
@@ -236,7 +211,6 @@ func (h *Hub) chainHandlers() http.Handler { //nolint:funlen
 	secureHandler := secureMiddleware.Handler(useForwardedHeadersHandlers)
 	loggingHandler := handlers.CombinedLoggingHandler(os.Stderr, secureHandler)
 	recoveryHandler := handlers.RecoveryHandler(
-		handlers.RecoveryLogger(zapRecoveryHandlerLogger{h.logger}),
 		handlers.PrintRecoveryStack(h.debug),
 	)(loggingHandler)
 
@@ -248,7 +222,6 @@ func (h *Hub) registerSubscriptionHandlers(r *mux.Router) {
 		return
 	}
 	if _, ok := h.transport.(TransportSubscribers); !ok {
-		h.logger.Error("The current transport doesn't support subscriptions. Subscription API disabled.")
 
 		return
 	}
@@ -281,7 +254,6 @@ func (h *Hub) metricsHandler() http.Handler {
 	router := mux.NewRouter()
 
 	registerHealthz(router)
-	h.metrics.(*PrometheusMetrics).Register(router.PathPrefix("/").Subrouter())
 
 	return router
 }
@@ -298,13 +270,4 @@ func welcomeHandler(w http.ResponseWriter, r *http.Request) {
 	fmt.Fprint(w, `<!DOCTYPE html>
 <title>Mercure Hub</title>
 <h1>Welcome to <a href="https://mercure.rocks">Mercure</a>!</h1>`)
-}
-
-// Deprecated: use the Caddy server module or the standalone library instead.
-type zapRecoveryHandlerLogger struct {
-	logger Logger
-}
-
-func (z zapRecoveryHandlerLogger) Println(args ...interface{}) {
-	z.logger.Error(fmt.Sprint(args...))
 }

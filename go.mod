@@ -1,4 +1,4 @@
-module github.com/dunglas/mercure
+module github.com/divine/mercure
 
 go 1.16
 

@@ -9,7 +9,6 @@ import (
 
 	"github.com/golang-jwt/jwt/v4"
 	"github.com/spf13/viper"
-	"go.uber.org/zap"
 )
 
 // Option instances allow to configure the library.
@@ -51,28 +50,10 @@ func WithDemo() Option {
 	}
 }
 
-// WithMetrics enables collection of Prometheus metrics.
-func WithMetrics(m Metrics) Option {
-	return func(o *opt) error {
-		o.metrics = m
-
-		return nil
-	}
-}
-
 // WithSubscriptions allows to dispatch updates when subscriptions are created or terminated.
 func WithSubscriptions() Option {
 	return func(o *opt) error {
 		o.subscriptions = true
-
-		return nil
-	}
-}
-
-// WithLogger sets the logger to use.
-func WithLogger(logger Logger) Option {
-	return func(o *opt) error {
-		o.logger = logger
 
 		return nil
 	}
@@ -200,13 +181,11 @@ type opt struct {
 	subscriptions      bool
 	ui                 bool
 	demo               bool
-	logger             Logger
 	writeTimeout       time.Duration
 	dispatchTimeout    time.Duration
 	heartbeat          time.Duration
 	publisherJWT       *jwtConfig
 	subscriberJWT      *jwtConfig
-	metrics            Metrics
 	allowedHosts       []string
 	publishOrigins     []string
 	corsOrigins        []string
@@ -220,7 +199,6 @@ type Hub struct {
 	// Deprecated: use the Caddy server module or the standalone library instead.
 	config        *viper.Viper
 	server        *http.Server
-	metricsServer *http.Server
 }
 
 // NewHub creates a new Hub instance.
@@ -231,24 +209,6 @@ func NewHub(options ...Option) (*Hub, error) {
 		if err := o(opt); err != nil {
 			return nil, err
 		}
-	}
-
-	if opt.logger == nil {
-		var (
-			l   Logger
-			err error
-		)
-		if opt.debug {
-			l, err = zap.NewDevelopment()
-		} else {
-			l, err = zap.NewProduction()
-		}
-
-		if err != nil {
-			return nil, fmt.Errorf("error when creating logger: %w", err)
-		}
-
-		opt.logger = l
 	}
 
 	if opt.transport == nil {
@@ -263,10 +223,6 @@ func NewHub(options ...Option) (*Hub, error) {
 		}
 
 		opt.topicSelectorStore = tss
-	}
-
-	if opt.metrics == nil {
-		opt.metrics = NopMetrics{}
 	}
 
 	h := &Hub{opt: opt}

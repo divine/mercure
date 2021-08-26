@@ -7,9 +7,6 @@ import (
 	"net/http"
 	"net/url"
 	"time"
-
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
 )
 
 // SubscribeHandler creates a keep alive connection and sends the events to the subscribers.
@@ -43,21 +40,19 @@ func (h *Hub) SubscribeHandler(w http.ResponseWriter, r *http.Request) {
 	for {
 		select {
 		case <-r.Context().Done():
-			h.logger.Debug("connection closed by the client", zap.Object("subscriber", s))
 
 			return
 		case <-writeTimerC:
-			h.logger.Debug("write timeout: close the connection", zap.Object("subscriber", s))
 
 			return
 		case <-heartbeatTimerC:
 			// Send a SSE comment as a heartbeat, to prevent issues with some proxies and old browsers
-			if !h.write(w, s, ":\n") {
+			if !h.write(w,":\n") {
 				return
 			}
 			heartbeatTimer.Reset(h.heartbeat)
 		case update, ok := <-s.Receive():
-			if !ok || !h.write(w, s, newSerializedUpdate(update).event) {
+			if !ok || !h.write(w,newSerializedUpdate(update).event) {
 				return
 			}
 			if heartbeatTimer != nil {
@@ -66,14 +61,13 @@ func (h *Hub) SubscribeHandler(w http.ResponseWriter, r *http.Request) {
 				}
 				heartbeatTimer.Reset(h.heartbeat)
 			}
-			h.logger.Info("Update sent", zap.Object("subscriber", s), zap.Object("update", update))
 		}
 	}
 }
 
 // registerSubscriber initializes the connection.
 func (h *Hub) registerSubscriber(w http.ResponseWriter, r *http.Request) *Subscriber {
-	s := NewSubscriber(retrieveLastEventID(r), h.logger, h.topicSelectorStore)
+	s := NewSubscriber(retrieveLastEventID(r), h.topicSelectorStore)
 	s.Debug = h.debug
 	s.RemoteAddr = r.RemoteAddr
 
@@ -85,7 +79,6 @@ func (h *Hub) registerSubscriber(w http.ResponseWriter, r *http.Request) *Subscr
 		}
 		if err != nil || (claims == nil && !h.anonymous) {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			h.logger.Info("Subscriber unauthorized", zap.Object("subscriber", s), zap.Error(err))
 
 			return nil
 		}
@@ -104,15 +97,11 @@ func (h *Hub) registerSubscriber(w http.ResponseWriter, r *http.Request) *Subscr
 	if err := h.transport.AddSubscriber(s); err != nil {
 		http.Error(w, http.StatusText(http.StatusServiceUnavailable), http.StatusServiceUnavailable)
 		h.dispatchSubscriptionUpdate(s, false)
-		h.logger.Error("Unable to add subscriber", zap.Object("subscriber", s), zap.Error(err))
 
 		return nil
 	}
 
 	sendHeaders(w, s)
-
-	h.logger.Info("New subscriber", zap.Object("subscriber", s))
-	h.metrics.SubscriberConnected(s)
 
 	return s
 }
@@ -155,7 +144,7 @@ func retrieveLastEventID(r *http.Request) string {
 // Write sends the given string to the client.
 // It returns false if the dispatch timed out.
 // The current write cannot be cancelled because of https://github.com/golang/go/issues/16100
-func (h *Hub) write(w io.Writer, s zapcore.ObjectMarshaler, data string) bool {
+func (h *Hub) write(w io.Writer, data string) bool {
 	if h.dispatchTimeout == 0 {
 		fmt.Fprint(w, data)
 		w.(http.Flusher).Flush()
@@ -176,7 +165,6 @@ func (h *Hub) write(w io.Writer, s zapcore.ObjectMarshaler, data string) bool {
 	case <-done:
 		return true
 	case <-timeout.C:
-		h.logger.Warn("Dispatch timeout reached", zap.Object("subscriber", s))
 
 		return false
 	}
@@ -186,8 +174,6 @@ func (h *Hub) shutdown(s *Subscriber) {
 	// Notify that the client is closing the connection
 	s.Disconnect()
 	h.dispatchSubscriptionUpdate(s, false)
-	h.logger.Info("Subscriber disconnected", zap.Object("subscriber", s))
-	h.metrics.SubscriberDisconnected(s)
 }
 
 func (h *Hub) dispatchSubscriptionUpdate(s *Subscriber, active bool) {

@@ -4,8 +4,6 @@ import (
 	"io"
 	"net/http"
 	"strconv"
-
-	"go.uber.org/zap"
 )
 
 // PublishHandler allows publisher to broadcast updates to all subscribers.
@@ -16,7 +14,6 @@ func (h *Hub) PublishHandler(w http.ResponseWriter, r *http.Request) {
 		claims, err = authorize(r, h.publisherJWT, h.publishOrigins)
 		if err != nil || claims == nil || claims.Mercure.Publish == nil {
 			http.Error(w, http.StatusText(http.StatusUnauthorized), http.StatusUnauthorized)
-			h.logger.Info("Topic selectors not matched, not provided or authorization error", zap.String("remote_addr", r.RemoteAddr), zap.Error(err))
 
 			return
 		}
@@ -65,6 +62,4 @@ func (h *Hub) PublishHandler(w http.ResponseWriter, r *http.Request) {
 	}
 
 	io.WriteString(w, u.ID)
-	h.logger.Info("Update published", zap.Object("update", u), zap.String("remote_addr", r.RemoteAddr))
-	h.metrics.UpdatePublished(u)
 }

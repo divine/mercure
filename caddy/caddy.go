@@ -15,17 +15,13 @@ import (
 	"github.com/caddyserver/caddy/v2/caddyconfig/caddyfile"
 	"github.com/caddyserver/caddy/v2/caddyconfig/httpcaddyfile"
 	"github.com/caddyserver/caddy/v2/modules/caddyhttp"
-	"github.com/dunglas/mercure"
-	"github.com/prometheus/client_golang/prometheus"
-	"go.uber.org/zap"
-	"go.uber.org/zap/zapcore"
+	"github.com/divine/mercure"
 )
 
 const defaultHubURL = "/.well-known/mercure"
 
 var (
 	transports = caddy.NewUsagePool()                                       //nolint:gochecknoglobals
-	metrics    = mercure.NewPrometheusMetrics(prometheus.DefaultRegisterer) //nolint:gochecknoglobals
 )
 
 func init() { //nolint:gochecknoinits
@@ -91,7 +87,6 @@ type Mercure struct {
 	CacheMaxCost *int64 `json:"cache_max_cost,omitempty"`
 
 	hub    *mercure.Hub
-	logger *zap.Logger
 }
 
 // CaddyModule returns the Caddy module information.
@@ -141,7 +136,6 @@ func (m *Mercure) Provision(ctx caddy.Context) error { //nolint:funlen
 		return err //nolint:wrapcheck
 	}
 
-	m.logger = ctx.Logger(m)
 	destructor, _, err := transports.LoadOrNew(m.TransportURL, func() (caddy.Destructor, error) {
 		u, err := url.Parse(m.TransportURL)
 		if err != nil {
@@ -152,7 +146,7 @@ func (m *Mercure) Provision(ctx caddy.Context) error { //nolint:funlen
 			u.Query().Set("write_timeout", time.Duration(*m.WriteTimeout).String())
 		}
 
-		transport, err := mercure.NewTransport(u, m.logger, tss)
+		transport, err := mercure.NewTransport(u, tss)
 		if err != nil {
 			return nil, err //nolint:wrapcheck
 		}
@@ -164,14 +158,9 @@ func (m *Mercure) Provision(ctx caddy.Context) error { //nolint:funlen
 	}
 
 	opts := []mercure.Option{
-		mercure.WithLogger(m.logger),
 		mercure.WithTopicSelectorStore(tss),
 		mercure.WithTransport(destructor.(*transportDestructor).transport),
-		mercure.WithMetrics(metrics),
 		mercure.WithPublisherJWT([]byte(m.PublisherJWT.Key), m.PublisherJWT.Alg),
-	}
-	if m.logger.Core().Enabled(zapcore.DebugLevel) {
-		opts = append(opts, mercure.WithDebug())
 	}
 
 	if m.SubscriberJWT.Key == "" {
