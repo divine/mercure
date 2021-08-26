@@ -212,7 +212,7 @@ func NewHub(options ...Option) (*Hub, error) {
 	}
 
 	if opt.transport == nil {
-		t, _ := NewLocalTransport(nil, nil, nil)
+		t, _ := NewLocalTransport(nil,  nil)
 		opt.transport = t
 	}
 

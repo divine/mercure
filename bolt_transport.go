@@ -12,7 +12,6 @@ import (
 	"time"
 
 	bolt "go.etcd.io/bbolt"
-	"go.uber.org/zap"
 )
 
 const BoltDefaultCleanupFrequency = 0.3
