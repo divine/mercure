@@ -103,6 +103,3 @@ dockers:
   - 'divine/mercure:legacy-v{{ .Major }}'
   - 'divine/mercure:legacy-v{{ .Major }}.{{ .Minor }}'
   - 'divine/mercure:legacy-latest'
-signs:
-  - artifacts: checksum
-    args: ["--batch", "-u", "{{ .Env.GPG_FINGERPRINT }}", "--output", "${signature}", "--detach-sign", "${artifact}"]
