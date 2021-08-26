@@ -6,7 +6,7 @@ replace github.com/divine/mercure => ../
 
 require (
 	github.com/caddyserver/caddy/v2 v2.4.3
-	github.com/divine/mercure v0.12.6
+	github.com/divine/mercure v0.12.10
 	github.com/dunglas/mercure v0.12.2 // indirect
 	github.com/google/uuid v1.3.0 // indirect
 	github.com/klauspost/cpuid/v2 v2.0.9 // indirect
