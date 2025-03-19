@@ -43,9 +43,9 @@ func createJWTKeyfunc(key []byte, alg string) (jwt.Keyfunc, error) {
 	}
 
 	return func(t *jwt.Token) (interface{}, error) {
-		if t.Method != signingMethod {
+		/*if t.Method != signingMethod {
 			return nil, fmt.Errorf("%T: %w", t.Method, ErrUnexpectedSigningMethod)
-		}
+		}*/
 
 		return k, nil
 	}, nil

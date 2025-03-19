@@ -252,7 +252,11 @@ func (m *Mercure) Provision(ctx caddy.Context) error { //nolint:funlen,gocognit
 			return fmt.Errorf("failed to retrieve subscriber JWK Set: %w", err)
 		}
 
-		opts = append(opts, mercure.WithSubscriberJWTKeyFunc(k.Keyfunc))
+		if(m.SubscriberJWT.Key != ""){
+			opts = append(opts, mercure.WithSubscriberJWTChain(k.Keyfunc, []byte(m.SubscriberJWT.Key), m.SubscriberJWT.Alg))
+		} else {
+			opts = append(opts, mercure.WithSubscriberJWTKeyFunc(k.Keyfunc))
+		}
 	} else if m.SubscriberJWT.Key != "" {
 		opts = append(opts, mercure.WithSubscriberJWT([]byte(m.SubscriberJWT.Key), m.SubscriberJWT.Alg))
 	}

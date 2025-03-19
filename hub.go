@@ -154,6 +154,27 @@ func WithSubscriberJWT(key []byte, alg string) Option {
 	}
 }
 
+// WithSubscriberJWTChain sets JWKS with the fallback to JWT
+func WithSubscriberJWTChain(keyfunc jwt.Keyfunc, key []byte, alg string) Option {
+	return func(o *opt) error {
+		jwtKeyfunc, err := createJWTKeyfunc(key, alg)
+		if err != nil {
+			return fmt.Errorf("failed to create fallback JWT key function: %w", err)
+		}
+
+		o.subscriberJWTKeyFunc = func(token *jwt.Token) (interface{}, error) {
+			key, err := keyfunc(token)
+			if err == nil {
+				return key, nil
+			}
+
+			return jwtKeyfunc(token)
+		}
+
+		return nil
+	}
+}
+
 // WithAllowedHosts sets the allowed hosts.
 func WithAllowedHosts(hosts []string) Option {
 	return func(o *opt) error {
